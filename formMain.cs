@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Clients.ActiveDirectory;
+﻿using Azure.Core;
+using Azure.Identity;
 using Microsoft.PowerBI.Api;
 using Microsoft.PowerBI.Api.Models;
 using Microsoft.Rest;
@@ -6,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -15,13 +17,8 @@ namespace PBI_WorkspaceCapacityMover
     public partial class formMain : Form
     {
         private static readonly string Username = ConfigurationManager.AppSettings["pbiUsername"];
-        private static readonly string AuthorityUrl = ConfigurationManager.AppSettings["authorityUrl"];
-        private static readonly string ResourceUrl = ConfigurationManager.AppSettings["resourceUrl"];
-        private static readonly string ClientId = ConfigurationManager.AppSettings["clientId"];
         private static readonly string ApiUrl = ConfigurationManager.AppSettings["apiUrl"];
-        //NOTE: required only for AAD auth prompt option
-        private static readonly Uri RedirectUri = new Uri(ConfigurationManager.AppSettings["redirectUri"]);
-
+        
         PowerBIClient client;
         Capacities capacitiesList;
 
@@ -32,39 +29,57 @@ namespace PBI_WorkspaceCapacityMover
 
         private void btnLogIn_Click(object sender, EventArgs e)
         {
-            var task = AthenticateToService();
+            var task = AthenticateToServiceMSAL();
         }
 
         /// <summary>
         /// Authentication to Power BI API and construction of client object
         /// </summary>
         /// <returns>asyncronous task</returns>
-        private async Task AthenticateToService()
+        private async Task AthenticateToServiceMSAL()
         {
-            // Authenticate using created credentials
-            var authenticationContext = new AuthenticationContext(AuthorityUrl);
-            //NOTE: auth option with creds stored
-            //var authenticationResult = await authenticationContext.AcquireTokenAsync(ResourceUrl, ClientId, credential);
-            //NOTE: auth with a prompt
-            var authenticationResult = await authenticationContext.AcquireTokenAsync(ResourceUrl, ClientId, RedirectUri,
-                new PlatformParameters(PromptBehavior.Auto),
-                new UserIdentifier(Username, UserIdentifierType.OptionalDisplayableId));
-
-            if (authenticationResult == null)
-            {
-                MessageBox.Show("Authentication Failed");
-            }
-
-            var tokenCredentials = new TokenCredentials(authenticationResult.AccessToken, "Bearer");
-
-            //Create a Power BI Client object. It will be used to call Power BI APIs.            
-            client = new PowerBIClient(new Uri(ApiUrl), tokenCredentials);
-
-            //use to test auth issues
-            tbTenantId.Text = authenticationResult.TenantId;
+            client = await GetPowerBiClient();
 
             //populating capacities combo box
             getCapacitiesList();
+        }
+
+        /// <summary>
+        /// Auth routine upgrade to MSAL
+        /// </summary>
+        /// <returns>PBI Access Token</returns>
+        internal async Task<AccessToken> GetAccessToken()
+        {
+            //NOTE: Default Windows creds; no prompt
+            //var credential = new DefaultAzureCredential();
+            //NOTE: prompt with pre-populated user name
+            InteractiveBrowserCredentialOptions options = new InteractiveBrowserCredentialOptions();
+            //NOTE: use of options is optinal to help speed up login process
+            options.LoginHint = Username;
+            //TODO: experiment with persisting auth options
+            //options.TokenCachePersistenceOptions = new TokenCachePersistenceOptions();
+            var credential = new InteractiveBrowserCredential(options);
+
+            string[] scopes = { "https://analysis.windows.net/powerbi/api/.default" };
+
+            var token = await credential.GetTokenAsync(new TokenRequestContext(scopes));
+
+            //extracting tenant Id from Jwt token; alternatively can move token Id
+            //to config file and set in options.TenantId 
+            var jwtToken = new JwtSecurityToken(token.Token);
+            string tenantId = jwtToken.Issuer.Split('/')[3];
+
+            tbTenantId.Text = tenantId;
+
+            return token;
+        }
+
+        internal async Task<PowerBIClient> GetPowerBiClient()
+        {
+            var addToken = await GetAccessToken();
+            var tokenCredentials = new TokenCredentials(addToken.Token, "Bearer");
+
+            return new PowerBIClient(new Uri(ApiUrl), tokenCredentials);
         }
 
         private async void getCapacitiesList()

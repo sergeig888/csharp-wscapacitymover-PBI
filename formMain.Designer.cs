@@ -197,7 +197,7 @@ namespace PBI_WorkspaceCapacityMover
             this.MaximumSize = new System.Drawing.Size(1050, 1000);
             this.MinimumSize = new System.Drawing.Size(1050, 350);
             this.Name = "formMain";
-            this.Text = "Power BI Workspace Capacity Manager Tool (Copyright © 2021 Sergei Gundorov)";
+            this.Text = "Power BI Workspace Capacity Manager Tool (Copyright © 2022 Sergei Gundorov)";
             ((System.ComponentModel.ISupportInitialize)(this.dgViewMyWorkspaces)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
