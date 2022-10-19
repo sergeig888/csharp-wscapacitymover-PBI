@@ -122,7 +122,7 @@ namespace PBI_WorkspaceCapacityMover
 
             do
             {
-                var groups = await client.Groups.GetGroupsAsAdminAsync(blockSize, skip: blockOffset, expand: "users", filter: "type eq 'PersonalGroup'");
+                var groups = await client.Groups.GetGroupsAsAdminAsync(blockSize, skip: blockOffset, expand: "users", filter: "tolower(type) eq 'personalgroup'");
 
                 if (groups == null || groups.Value.Count == 0) return;
 

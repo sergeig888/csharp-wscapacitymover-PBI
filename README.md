@@ -31,3 +31,5 @@ This sample uses well-known built-in Power BI app id (it is used by Power BI Pow
 
 **UPDATE** [4/8/22]: authentication is updated to MSAL
 
+**UPDATE** [10/19/22]: modified request filter syntax to address service metadata updates for 'type' attribute
+
