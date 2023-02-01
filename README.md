@@ -33,3 +33,4 @@ This sample uses well-known built-in Power BI app id (it is used by Power BI Pow
 
 **UPDATE** [10/19/22]: modified request filter syntax to address service metadata updates for 'type' attribute
 
+**UPDATE** [2/1/23]: addressed re-introduced in January 2023 service update null for removed users

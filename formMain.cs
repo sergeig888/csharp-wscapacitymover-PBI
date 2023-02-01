@@ -29,14 +29,14 @@ namespace PBI_WorkspaceCapacityMover
 
         private void btnLogIn_Click(object sender, EventArgs e)
         {
-            var task = AthenticateToServiceMSAL();
+            var task = AuthenticateToServiceMSAL();
         }
 
         /// <summary>
         /// Authentication to Power BI API and construction of client object
         /// </summary>
-        /// <returns>asyncronous task</returns>
-        private async Task AthenticateToServiceMSAL()
+        /// <returns>asynchronous task</returns>
+        private async Task AuthenticateToServiceMSAL()
         {
             client = await GetPowerBiClient();
 
@@ -54,7 +54,7 @@ namespace PBI_WorkspaceCapacityMover
             //var credential = new DefaultAzureCredential();
             //NOTE: prompt with pre-populated user name
             InteractiveBrowserCredentialOptions options = new InteractiveBrowserCredentialOptions();
-            //NOTE: use of options is optinal to help speed up login process
+            //NOTE: use of options is optional to help speed up login process
             options.LoginHint = Username;
             //TODO: experiment with persisting auth options
             //options.TokenCachePersistenceOptions = new TokenCachePersistenceOptions();
@@ -108,7 +108,7 @@ namespace PBI_WorkspaceCapacityMover
 
         private async void btnGetMyWorkspaces_Click(object sender, EventArgs e)
         {
-            //clearing previos result set
+            //clearing previous result set
             dgViewMyWorkspaces.Rows.Clear();
 
             //enumerating groups
@@ -134,7 +134,11 @@ namespace PBI_WorkspaceCapacityMover
                 {
                     dgViewMyWorkspaces.Rows[i].Cells[0].Value = groups.Value[i - blockOffset].Id;
                     dgViewMyWorkspaces.Rows[i].Cells[1].Value = groups.Value[i - blockOffset].Name;
-                    dgViewMyWorkspaces.Rows[i].Cells[2].Value = groups.Value[i - blockOffset].Users[0].Identifier;
+                    //fixing error re-introduced in January 2023 update
+                    if (groups.Value[i - blockOffset].Users.Count != 0)
+                    {
+                        dgViewMyWorkspaces.Rows[i].Cells[2].Value = groups.Value[i - blockOffset].Users[0].EmailAddress;
+                    }
                     dgViewMyWorkspaces.Rows[i].Cells[3].Value = groups.Value[i - blockOffset].State;
                     dgViewMyWorkspaces.Rows[i].Cells[4].Value = groups.Value[i - blockOffset].CapacityId.ToString();
                 }
